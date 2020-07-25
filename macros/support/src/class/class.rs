@@ -118,7 +118,7 @@ impl Class {
             let interface_name = &interface.path;
             let field_ident = quote::format_ident!("__{}", index);
             quote! {
-                #field_ident: ::std::ptr::NonNull<<#interface_name as ::com::Interface>::VTable>
+                pub(crate) #field_ident: ::std::ptr::NonNull<<#interface_name as ::com::Interface>::VTable>
             }
         });
         let ref_count_ident = crate::utils::ref_count_ident();

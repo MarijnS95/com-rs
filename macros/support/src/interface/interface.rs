@@ -26,7 +26,8 @@ impl Interface {
             #[repr(transparent)]
             #[derive(Debug)]
             #vis struct #name {
-                inner: ::std::ptr::NonNull<#vptr>,
+                // inner: ::std::ptr::NonNull<#vptr>,
+                inner: #vptr,
             }
             #impl_block
         }

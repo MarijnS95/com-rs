@@ -31,6 +31,6 @@ impl IClassFactory {
             // TODO: decide what failures are possible
             return None;
         }
-        Some(ppv.unwrap())
+        Some(ppv.expect("IClassFactory: ppv is None"))
     }
 }

@@ -66,6 +66,7 @@ fn gen_vpointer_inits(class: &Class) -> TokenStream {
             let vptr_field_ident = quote::format_ident!("__{}", index);
             quote! {
                 let #vptr_field_ident = unsafe { ::std::ptr::NonNull::new_unchecked(Box::into_raw(Box::new(#interface))) };
+                dbg!(#vptr_field_ident);
             }
         });
 
