@@ -36,5 +36,6 @@ members = [
     "examples/basic/server",
     "examples/basic/client",
     "examples/basic/interface",
+    "examples/basic/sameprocess",
     "examples/d2d-clock"
 ]

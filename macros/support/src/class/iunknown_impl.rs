@@ -100,10 +100,13 @@ impl IUnknown {
             }
         });
 
+        let releasestr = format!("release({}@{{:p}}) refcount is now {{}}", class_name);
+
         quote! {
             pub unsafe fn release(&self) -> u32 {
                 let value = self.#ref_count_ident.get().checked_sub(1).expect("Underflow of reference count");
                 self.#ref_count_ident.set(value);
+                println!(#releasestr, self, value);
                 let #ref_count_ident = self.#ref_count_ident.get();
                 if #ref_count_ident == 0 {
                     #(#vptr_drops)*

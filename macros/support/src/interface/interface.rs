@@ -81,10 +81,12 @@ impl Interface {
 
     fn drop_impl(&self) -> TokenStream {
         let name = &self.name;
+        let dropstr = format!("Dropping {}@{{:p}}", name);
 
         quote! {
             impl Drop for #name {
                 fn drop(&mut self) {
+                    println!(#dropstr, self);
                     unsafe {
                         <Self as ::com::Interface>::as_iunknown(self).release();
                     }
