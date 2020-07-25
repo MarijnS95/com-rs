@@ -66,13 +66,35 @@ impl Bowl {
         debug_assert!(ppv.is_some());
         ppv
     }
+
+    pub fn get_interface_ref<'a, I: Interface>(&'a self) -> Option<&'a I> {
+        // pub fn get_interface<'a, I: Interface>(&self) -> Option<I> {
+        use com::sys::{E_NOINTERFACE, E_POINTER, FAILED};
+        use com::IID;
+        let mut ppv = None;
+        let hr = unsafe {
+            self.query_interface(
+                &I::IID as *const IID,
+                &mut ppv as *mut _ as *mut *mut c_void,
+            )
+        };
+        if FAILED(hr) {
+            assert!(
+                hr == E_NOINTERFACE || hr == E_POINTER,
+                "QueryInterface returned non-standard error"
+            );
+            return None;
+        }
+        debug_assert!(ppv.is_some());
+        ppv
+    }
 }
 
 fn main() {
     let b = Bowl::default();
     // unsafe { b.add_ref() };
     println!("Bowl@{:p}, refcnt = {}", &b, b.__refcnt.get());
-    let food = b.get_interface::<IFood>().unwrap();
-    println!("IFood@{:p}", &food);
+    let food = b.get_interface_ref::<IFood>().unwrap();
+    println!("IFood@{:p}", food);
     println!("bowl refcnt = {}", b.__refcnt.get());
 }
