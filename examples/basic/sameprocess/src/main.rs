@@ -4,6 +4,9 @@ use com::sys::{E_INVALIDARG, HRESULT, NOERROR};
 use com::{class, interfaces, interfaces::IUnknown, Interface};
 use std::cell::Cell;
 use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use ::com::interfaces::IClassFactory;
 
 interfaces! {
     #[uuid("14f486bf-408d-43be-8a34-bbfa56980a37")]
@@ -38,9 +41,42 @@ class! {
     }
 }
 
+// Mimick an API generally exported by a dlopened library (ie. dxcompiler):
+class! {
+    pub(crate) class ExternalAnimal: IAnimal {
+    }
+
+    impl IAnimal for ExternalAnimal  {
+        // fn consume_optional_food(&self, food: Option<IFood>) -> HRESULT {
+        fn consume_optional_food(&self, food: *mut NonNull<<IFood as Interface>::VTable>) -> HRESULT {
+            let object = food as *mut _ as *mut IFood;
+            println!("consume_optional_food({:p} {:p}", self, food);
+            if object.is_null() {
+                E_INVALIDARG
+            } else {
+                unsafe { object.as_ref().unwrap().consume_food(1) }
+            }
+        }
+        // fn consume_mandatory_food(&self, food: IFood) -> HRESULT {
+        fn consume_mandatory_food(&self, food: NonNull<NonNull<<IFood as Interface>::VTable>>) -> HRESULT {
+            let object = food.as_ptr() as *mut _ as *mut IFood;
+            unsafe { object.as_ref().unwrap().consume_food(1) }
+        }
+        fn consume_food_ptr(&self, food: *const IFood) -> HRESULT {
+            unsafe { food.as_ref().unwrap().consume_food(1) }
+        }
+    }
+}
+
 impl Default for Bowl {
     fn default() -> Self {
         Self::new(Cell::new(20))
+    }
+}
+
+impl Default for ExternalAnimal {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
