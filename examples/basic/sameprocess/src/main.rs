@@ -126,11 +126,69 @@ impl Bowl {
     }
 }
 
+impl ExternalAnimal {
+    pub fn get_interface<I: Interface>(&self) -> Option<I> {
+        // pub fn get_interface<'a, I: Interface>(&self) -> Option<I> {
+        use com::sys::{E_NOINTERFACE, E_POINTER, FAILED};
+        use com::IID;
+        let mut ppv = None;
+        let hr = unsafe {
+            self.query_interface(
+                &I::IID as *const IID,
+                &mut ppv as *mut _ as *mut *mut c_void,
+            )
+        };
+        if FAILED(hr) {
+            assert!(
+                hr == E_NOINTERFACE || hr == E_POINTER,
+                "QueryInterface returned non-standard error"
+            );
+            return None;
+        }
+        debug_assert!(ppv.is_some());
+        ppv
+    }
+
+    pub fn get_interface_ref<'a, I: Interface>(&'a self) -> Option<&'a I> {
+        // pub fn get_interface<'a, I: Interface>(&self) -> Option<I> {
+        use com::sys::{E_NOINTERFACE, E_POINTER, FAILED};
+        use com::IID;
+        let mut ppv = None;
+        let hr = unsafe {
+            self.query_interface(
+                &I::IID as *const IID,
+                &mut ppv as *mut _ as *mut *mut c_void,
+            )
+        };
+        if FAILED(hr) {
+            assert!(
+                hr == E_NOINTERFACE || hr == E_POINTER,
+                "QueryInterface returned non-standard error"
+            );
+            return None;
+        }
+        debug_assert!(ppv.is_some());
+        ppv
+    }
+}
+
 fn main() {
     let b = Bowl::default();
     // unsafe { b.add_ref() };
     println!("Bowl@{:p}, refcnt = {}", &b, b.__refcnt.get());
-    let food = b.get_interface_ref::<IFood>().unwrap();
-    println!("IFood@{:p}", food);
+
+
+    let food = b.get_interface::<IFood>().unwrap();
     println!("bowl refcnt = {}", b.__refcnt.get());
+
+    let food_ref = b.get_interface_ref::<IFood>().unwrap();
+    println!("IFood@{:p}", food_ref);
+    println!("bowl refcnt = {}", b.__refcnt.get());
+
+    // Load an external interface
+    let ext = ExternalAnimal::default();
+    // let api: &IAnimal = unsafe { std::mem::transmute(&ext) };
+    let api = ext.get_interface_ref::<IAnimal>().unwrap();
+
+    unsafe { api.consume_optional_food(Some(food)) };
 }
