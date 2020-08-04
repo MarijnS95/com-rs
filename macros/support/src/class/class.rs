@@ -132,6 +132,12 @@ impl Class {
         let release = iunknown.to_release_tokens(interfaces);
         let query_interface = iunknown.to_query_interface_tokens(interfaces);
         let constructor = super::class_constructor::generate(self);
+        // let safe_query = self.safe_query();
+        let deref = self.deref_impl();
+
+        let interface_name = &interfaces.first().unwrap().path;
+        let vtable_ident = quote! { <#interface_name as ::com::Interface>::VTable };
+        let iid_ident = quote! { <#interface_name as ::com::Interface>::IID };
 
         quote!(
             #(#docs)*
@@ -147,11 +153,20 @@ impl Class {
                 #add_ref
                 #release
                 #query_interface
+                // #safe_query
             }
+
+            unsafe impl com::Interface for #name {
+                type VTable = #vtable_ident;
+                type Super = #interface_name;
+                const IID: com::sys::IID = #iid_ident;
+            }
+
+            // #deref
         )
     }
 
-    pub fn to_class_trait_impl_tokens(&self) -> TokenStream {
+    fn to_class_trait_impl_tokens(&self) -> TokenStream {
         if self.class_factory {
             return TokenStream::new();
         }
@@ -165,6 +180,42 @@ impl Class {
             }
         }
     }
+
+    fn deref_impl(&self) -> TokenStream {
+        // if self.is_iunknown() {
+        //     return quote! {};
+        // }
+
+        let name = &self.name;
+        let interface_name = &self.interfaces.first().unwrap().path;
+
+        quote! {
+            impl ::std::ops::Deref for #name {
+                // type Target = <#name as ::com::Interface>::Super;
+                type Target = #interface_name;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { ::std::mem::transmute(self) }
+                }
+            }
+        }
+    }
+
+    // fn safe_query(&self) -> TokenStream {
+    //     // if self.is_iunknown() {
+    //     //     return TokenStream::new();
+    //     // }
+    //     let vis = &self.visibility;
+    //     quote! {
+    //         /// A safe version of `QueryInterface`.
+    //         ///
+    //         /// If the backing class implements the interface `I` then a `Some`
+    //         /// containing an `ComPtr` pointing to that interface will be returned
+    //         /// otherwise `None` will be returned.
+    //         #vis fn get_interface<I: ::com::Interface>(&self) -> Option<I> {
+    //             <Self as ::com::Interface>::as_iunknown(self).get_interface()
+    //         }
+    //     }
+    // }
 }
 
 impl syn::parse::Parse for Class {
