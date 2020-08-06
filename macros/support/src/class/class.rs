@@ -132,6 +132,7 @@ impl Class {
         let release = iunknown.to_release_tokens(interfaces);
         let query_interface = iunknown.to_query_interface_tokens(interfaces);
         let constructor = super::class_constructor::generate(self);
+        let drop = self.drop_impl();
 
         quote!(
             #(#docs)*
@@ -148,7 +149,20 @@ impl Class {
                 #release
                 #query_interface
             }
+            #drop
         )
+    }
+
+    fn drop_impl(&self) -> TokenStream {
+        let name = &self.name;
+
+        quote! {
+            impl Drop for #name {
+                fn drop(&mut self) {
+                    unsafe { self.release(); }
+                }
+            }
+        }
     }
 
     pub fn to_class_trait_impl_tokens(&self) -> TokenStream {
